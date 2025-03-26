@@ -37,6 +37,8 @@ public class User implements Serializable{
 	@JsonProperty(access = Access.WRITE_ONLY)
 	private String password;
 	
+	private String email;
+	
 	private String phone;
 	private String address;
 	private String license;
@@ -123,6 +125,15 @@ public class User implements Serializable{
 	public void setCurrentBalance(double currentBalance) {
 		this.currentBalance = currentBalance;
 	}
+	
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
 
 	public Boolean getEmailVerified() {
 		return emailVerified;
