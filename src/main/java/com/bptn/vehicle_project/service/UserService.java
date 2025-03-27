@@ -26,8 +26,14 @@ public class UserService {
 	
 	public User signup(User user) {
 		user.setUsername(user.getUsername().toLowerCase());
+		user.setFirstName(user.getFirstName().toLowerCase());
+		user.setLastName(user.getLastName().toLowerCase());
 		user.setEmail(user.getEmail().toLowerCase());
 		user.setEmailVerified(false);
+		user.setPhone(user.getPhone());
+		user.setLicense(user.getLicense().toLowerCase());
+		user.setAddress(user.getAddress().toLowerCase());
+		user.setPassword(user.getPassword().toLowerCase());
 		user.setCreatedOn(Timestamp.from(Instant.now()));
 		this.userRepository.save(user);
 		return user;
