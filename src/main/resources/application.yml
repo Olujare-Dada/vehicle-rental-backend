@@ -6,7 +6,20 @@ spring:
 # Jackson Settings
   jackson:
     time-zone: America/Toronto
-    date-format: "yyyy-MM-dd HH:mm:ss"
+    date-format: "yyyy-MM-dd HH:mm:ss"      
+# Email Settings
+  mail:
+    username: yourNewEmail@gmail.com
+    password: Enteryour2FAPassword
+    host: smtp.gmail.com
+    port: 587
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+        auth: true
+        starttls:
+        enable: true
 
 # Common Database Settings
   sql:
