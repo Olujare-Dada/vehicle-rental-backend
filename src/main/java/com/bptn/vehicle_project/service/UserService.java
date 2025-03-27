@@ -17,6 +17,8 @@ public class UserService {
 	@Autowired
 	UserRepository userRepository;
 	
+	@Autowired
+	EmailService emailService;
 	
 	public Optional<User> findByUsername(String username) {
 		return this.userRepository.findByUsername(username);
@@ -33,5 +35,7 @@ public class UserService {
 	
 	public void createUser(User user) {
 		this.userRepository.save(user);
+		this.emailService.sendVerificationEmail(user);
+		
 	}
 }
