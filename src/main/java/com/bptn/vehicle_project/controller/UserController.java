@@ -1,5 +1,7 @@
 package com.bptn.vehicle_project.controller;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +22,18 @@ public class UserController {
 	
 	
 	@GetMapping("/{username}")
-	public User findByUsername(@PathVariable String username) {
+	public Optional<User> findByUsername(@PathVariable String username) {
 		logger.debug("The findByUsername() method was invoked!, username= {}", username);
 		return this.userService.findByUsername(username);
 	}
 	
+	@PostMapping("/signup")
+	public void signup(@RequestBody User user) {
+		
+		logger.debug("Signing up, username: {}", user.getUsername());
+		
+		this.userService.signup(user);
+	}
 	//username, firstname, lastname, email, phone, address, password, license, currentBalance
 	@PostMapping
 	public String createUser(

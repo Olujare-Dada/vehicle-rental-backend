@@ -1,5 +1,7 @@
 package com.bptn.vehicle_project.service;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,15 @@ public class UserService {
 	
 	public Optional<User> findByUsername(String username) {
 		return this.userRepository.findByUsername(username);
+	}
+	
+	public User signup(User user) {
+		user.setUsername(user.getUsername().toLowerCase());
+		user.setEmail(user.getEmail().toLowerCase());
+		user.setEmailVerified(false);
+		user.setCreatedOn(Timestamp.from(Instant.now()));
+		this.userRepository.save(user);
+		return user;
 	}
 	
 	public void createUser(User user) {
