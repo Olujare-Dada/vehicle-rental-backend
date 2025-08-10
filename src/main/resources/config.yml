@@ -1,0 +1,35 @@
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86_400_000 # 24 hours
+  issuer: 'Obsidi Academy'
+  audience: feedApp
+  prefix: 'Bearer '
+  excluded.urls: > 
+    /login,
+    /signup,
+    /user/verifyEmail,
+    /user/reset/*,
+    /test/**,
+    /test-post,
+    /actuator/**,
+    /error
+    
+# Client Configuration  
+client:
+  url: http://localhost:8080
+  email:
+    verify: 
+      param: user/verifyEmail
+      expiration: 86_400_000 # 24 hours
+    reset: 
+      param: user/resetPassword
+      expiration: 86_400_000 # 24 hours 
+
+# H2 Server Configuration 
+h2.server:
+  params: >
+    -tcp, 
+    -tcpAllowOthers, 
+    -tcpPort, 
+    9090

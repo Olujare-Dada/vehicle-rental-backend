@@ -123,7 +123,7 @@ public class UserController {
 	@GetMapping("/user/{username}")
 	public ResponseEntity<String> findByUsername(@PathVariable String username) {
 		try {
-			logger.debug("The findByUsername() method was invoked!, username= {}", username);
+		logger.debug("The findByUsername() method was invoked!, username= {}", username);
 			
 			// Get current authenticated user
 			String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -153,9 +153,9 @@ public class UserController {
 	@PostMapping("/signup")
 	public ResponseEntity<String> signup(@RequestBody User user) {
 		try {
-			logger.debug("Signing up, username: {}", user.getUsername());
-			
-			this.userService.signup(user);
+		logger.debug("Signing up, username: {}", user.getUsername());
+		
+		this.userService.signup(user);
 			
 			return ResponseEntity.ok("{\"message\": \"User registered successfully. Please check your email for verification.\"}");
 		} catch (IllegalArgumentException e) {
