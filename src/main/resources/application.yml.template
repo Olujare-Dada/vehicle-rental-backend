@@ -79,4 +79,4 @@ spring:
 # Python Flask service configuration
 python:
   flask:
-    base-url: ${FLASK_BASE_URL}
+    base-url: ${FLASK_BASE_URL} 

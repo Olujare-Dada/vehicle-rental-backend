@@ -11,7 +11,6 @@ import com.bptn.vehicle_project.provider.factory.YamlPropertySourceFactory;
 @PropertySource(value = "classpath:config.yml", factory = YamlPropertySourceFactory.class)
 public class ResourceProvider {
 
-
 	@Value("${jwt.secret}")
 	private String jwtSecret;
 
