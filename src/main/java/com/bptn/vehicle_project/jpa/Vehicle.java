@@ -1,6 +1,9 @@
 package com.bptn.vehicle_project.jpa;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -26,17 +30,24 @@ public class Vehicle implements Serializable{
 	private String model;
 	private String color;
 	private Integer year;
-	private Double mileage;
+	private BigDecimal mileage;
 	
 	@Column(name="\"rentalCostPerDay\"")
-	private Double rentalCostPerDay;
+	private BigDecimal rentalCostPerDay;
 	
 	@Column(name="\"vehicleRentalStatus\"")
 	private String vehicleRentalStatus;
 	
+	@Column(name="\"vehicle_image_url\"")
+	private String vehicleImageUrl;
+	
+	@ManyToOne
+	@JoinColumn(name="\"category_id\"")
+	private Category category;
+	
 	@OneToMany
 	@JoinColumn(name="\"vehicleId\"")
-	private Rental rental;
+	private List<Rental> rentals = new ArrayList<>();
 
 	
 	public Integer getVehicleId() {
@@ -79,19 +90,19 @@ public class Vehicle implements Serializable{
 		this.year = year;
 	}
 
-	public Double getMileage() {
+	public BigDecimal getMileage() {
 		return mileage;
 	}
 
-	public void setMileage(Double mileage) {
+	public void setMileage(BigDecimal mileage) {
 		this.mileage = mileage;
 	}
 
-	public Double getRentalCostPerDay() {
+	public BigDecimal getRentalCostPerDay() {
 		return rentalCostPerDay;
 	}
 
-	public void setRentalCostPerDay(Double rentalCostPerDay) {
+	public void setRentalCostPerDay(BigDecimal rentalCostPerDay) {
 		this.rentalCostPerDay = rentalCostPerDay;
 	}
 
@@ -103,11 +114,27 @@ public class Vehicle implements Serializable{
 		this.vehicleRentalStatus = vehicleRentalStatus;
 	}
 
-	public Rental getRental() {
-		return rental;
+	public List<Rental> getRental() {
+		return rentals;
 	}
 
-	public void setRental(Rental rental) {
-		this.rental = rental;
+	public void setRental(List<Rental> rentals) {
+		this.rentals = rentals;
+	}
+	
+	public String getVehicleImageUrl() {
+		return vehicleImageUrl;
+	}
+
+	public void setVehicleImageUrl(String vehicleImageUrl) {
+		this.vehicleImageUrl = vehicleImageUrl;
+	}
+
+	public Category getCategory() {
+		return category;
+	}
+
+	public void setCategory(Category category) {
+		this.category = category;
 	}
 }

@@ -6,16 +6,18 @@ jwt:
   audience: feedApp
   prefix: 'Bearer '
   excluded.urls: > 
-    /user/login,
-    /user/signup,
+    /login,
+    /signup,
+    /user/verifyEmail,
     /user/reset/*,
     /test/**,
+    /test-post,
     /actuator/**,
     /error
     
 # Client Configuration  
 client:
-  url: http://localhost:3000
+  url: http://localhost:8080
   email:
     verify: 
       param: user/verifyEmail

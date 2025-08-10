@@ -4,7 +4,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -12,7 +11,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.auth0.jwt.exceptions.JWTDecodeException;
@@ -22,9 +20,8 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 
 
-@RestController
 @RestControllerAdvice
-public class ExceptionHandling implements ErrorController{
+public class ExceptionHandling {
 	
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 	
@@ -38,7 +35,6 @@ public class ExceptionHandling implements ErrorController{
 	private static final String NOT_ENOUGH_PERMISSION = "You do not have enough permission";
 	private static final String NOT_AUTHENTICATED = "You need to log in to access this URL";
 	private static final String NO_MAPPING_EXIST_URL = "There is no mapping for this URL";
-	private static final String ERROR_PATH = "/error";
 	
 	
 	private ResponseEntity<HttpResponse> createHttpResponse(HttpStatus httpStatus, String message) {

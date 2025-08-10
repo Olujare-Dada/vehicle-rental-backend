@@ -1,8 +1,14 @@
 package com.bptn.vehicle_project.jpa;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.bptn.vehicle_project.jpa.Profile;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,6 +20,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -44,7 +51,7 @@ public class User implements Serializable{
 	private String license;
 	
 	@Column(name = "\"currentBalance\"")
-	private double currentBalance;
+	private BigDecimal currentBalance;
 	
 	@Column(name = "\"emailVerified\"")
 	private Boolean emailVerified;
@@ -52,11 +59,32 @@ public class User implements Serializable{
 	@Column(name = "\"createdOn\"")
 	private Timestamp createdOn;
 	
-	private Vehicle vehicle;
+	// New fields added to database
+	private String city;
+	private String state;
+	private String zipcode;
+	
+	@Column(name = "\"license_expiry\"")
+	@JsonFormat(pattern = "yyyy-MM-dd")
+	private Date licenseExpiry;
+	
+	@Column(name = "\"license_state\"")
+	private String licenseState;
+	
+	@Column(name = "\"date_of_birth\"")
+	@JsonFormat(pattern = "yyyy-MM-dd")
+	private Date dateOfBirth;
 	
 	@JsonInclude(Include.NON_NULL)
-	@OneToMany(mappedBy="username", cascade=CascadeType.ALL, fetch=FetchType.EAGER)
-	private Rental rental;
+	@OneToOne(mappedBy="user", cascade=CascadeType.ALL, fetch=FetchType.EAGER)
+	private Profile profile;
+
+	
+//	private Vehicle vehicle;
+	
+	@JsonInclude(Include.NON_NULL)
+	@OneToMany(mappedBy="user")
+	private List<Rental> rentals = new ArrayList<>();
 	
 	public User() {
 		
@@ -118,11 +146,11 @@ public class User implements Serializable{
 		this.license = license;
 	}
 
-	public double getCurrentBalance() {
+	public BigDecimal getCurrentBalance() {
 		return currentBalance;
 	}
 
-	public void setCurrentBalance(double currentBalance) {
+	public void setCurrentBalance(BigDecimal currentBalance) {
 		this.currentBalance = currentBalance;
 	}
 	
@@ -149,5 +177,71 @@ public class User implements Serializable{
 
 	public void setCreatedOn(Timestamp createdOn) {
 		this.createdOn = createdOn;
+	}
+	
+	public List<Rental> getRentals(){
+		return rentals;
+	}
+	
+	public void setRentals(List<Rental> rentals) {
+		this.rentals=rentals;
+	}
+	
+	public Profile getProfile() {
+		return profile;
+	}
+
+
+	public void setProfile(Profile profile) {
+		this.profile = profile;
+	}
+	
+	// Getters and setters for new fields
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public String getZipcode() {
+		return zipcode;
+	}
+
+	public void setZipcode(String zipcode) {
+		this.zipcode = zipcode;
+	}
+
+	public Date getLicenseExpiry() {
+		return licenseExpiry;
+	}
+
+	public void setLicenseExpiry(Date licenseExpiry) {
+		this.licenseExpiry = licenseExpiry;
+	}
+
+	public String getLicenseState() {
+		return licenseState;
+	}
+
+	public void setLicenseState(String licenseState) {
+		this.licenseState = licenseState;
+	}
+
+	public Date getDateOfBirth() {
+		return dateOfBirth;
+	}
+
+	public void setDateOfBirth(Date dateOfBirth) {
+		this.dateOfBirth = dateOfBirth;
 	}
 }
