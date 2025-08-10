@@ -102,3 +102,4 @@ Thumbs.db
 src/main/resources/application.yml
 *.env
 "src/main/resources/application.yml" 
+"src/main/resources/application.yml" 
