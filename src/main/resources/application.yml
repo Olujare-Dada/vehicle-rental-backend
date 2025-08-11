@@ -60,6 +60,9 @@ spring:
   config:
     activate:
       on-profile: default
+  
+  server:
+    port: ${PORT:8080}
 
   datasource:
     url: ${DATABASE_URL}
