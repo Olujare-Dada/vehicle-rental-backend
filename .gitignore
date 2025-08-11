@@ -97,10 +97,3 @@ Thumbs.db
 
 # Local environment variables
 .env
-
-# Configuration files with sensitive data
-src/main/resources/application.yml
-src/main/resources/config.yml
-*.env
-"src/main/resources/application.yml" 
-"src/main/resources/application.yml" 
