@@ -42,6 +42,9 @@ public class Rental {
 	@Column(name= "\"additional_notes\"")
 	private String additionalNotes;
 	
+	@Column(name= "\"return_date\"")
+	private LocalDate returnDate;
+	
 	// Getters and setters for existing fields
 	public Integer getRentalId() {
 		return rentalId;
@@ -89,6 +92,14 @@ public class Rental {
 	
 	public void setAdditionalNotes(String additionalNotes) {
 		this.additionalNotes = additionalNotes;
+	}
+	
+	public LocalDate getReturnDate() {
+		return returnDate;
+	}
+	
+	public void setReturnDate(LocalDate returnDate) {
+		this.returnDate = returnDate;
 	}
 
 	public Vehicle getVehicle() {

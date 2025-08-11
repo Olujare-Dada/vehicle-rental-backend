@@ -10,7 +10,7 @@ import com.bptn.vehicle_project.jpa.Rental;
 
 public interface RentalRepository extends JpaRepository<Rental, Integer> {
 	
-	List<Rental> findByRentalId(Integer rentalId);
+	Optional<Rental> findByRentalId(Integer rentalId);
 	List<Rental> findByUserUsername(String username);
 	Optional<Rental> findTopByUserUsernameOrderByStartDateDesc(String username);
 //	Optional<Rental> findTopByVehicleIdOrderByStartDateDesc(Integer vehicleId);

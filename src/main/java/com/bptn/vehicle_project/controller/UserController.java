@@ -32,7 +32,12 @@ import com.bptn.vehicle_project.domain.LogoutRequest;
 import com.bptn.vehicle_project.domain.LogoutResponse;
 import com.bptn.vehicle_project.domain.ProfileResponse;
 import com.bptn.vehicle_project.domain.RentalRequest;
+import com.bptn.vehicle_project.domain.LateFeePaymentRequest;
+import com.bptn.vehicle_project.domain.ReturnRequest;
+import com.bptn.vehicle_project.domain.ReturnResponse;
 import com.bptn.vehicle_project.domain.UserResponse;
+import com.bptn.vehicle_project.jpa.LateFee;
+import com.bptn.vehicle_project.jpa.LateFeePayment;
 import com.bptn.vehicle_project.jpa.Profile;
 import com.bptn.vehicle_project.jpa.Rental;
 import com.bptn.vehicle_project.jpa.User;
@@ -708,6 +713,192 @@ public class UserController {
 				java.time.LocalDateTime.now()
 			);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+		}
+	}
+	
+	/**
+	 * Return vehicle endpoint
+	 * POST /rentals/return
+	 */
+	@PostMapping("/rentals/return")
+	public ResponseEntity<Map<String, Object>> returnVehicle(@RequestBody ReturnRequest returnRequest) {
+		try {
+			logger.debug("Vehicle return request for rental ID: {}", returnRequest.getRentalId());
+			
+			// Process vehicle return
+			ReturnResponse returnResponse = rentalService.returnVehicle(returnRequest);
+			
+			// Create success response
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "Vehicle returned successfully");
+			response.put("data", returnResponse);
+			response.put("timestamp", returnResponse.getTimestamp());
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (InsufficientBalanceException e) {
+			logger.error("Insufficient balance for vehicle return: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Return failed due to insufficient balance");
+			response.put("error", e.getMessage());
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.badRequest().body(response);
+			
+		} catch (RuntimeException e) {
+			logger.error("Error during vehicle return: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Return failed");
+			response.put("error", e.getMessage());
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.badRequest().body(response);
+			
+		} catch (Exception e) {
+			logger.error("Unexpected error during vehicle return: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Return failed");
+			response.put("error", "An unexpected error occurred during vehicle return");
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Get user's late fees endpoint
+	 * GET /late-fees/user
+	 */
+	@GetMapping("/late-fees/user")
+	public ResponseEntity<Map<String, Object>> getUserLateFees(@RequestHeader("Authorization") String authHeader) {
+		try {
+			logger.debug("Get user late fees request");
+			
+			// Get username from JWT token
+			String token = authHeader.substring(7);
+			String username = jwtService.getSubject(token);
+			
+			// Get late fees from service
+			List<LateFee> lateFees = rentalService.getUserLateFees(username);
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "Late fees retrieved successfully");
+			response.put("data", lateFees);
+			response.put("timestamp", java.time.LocalDateTime.now());
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error retrieving user late fees: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Failed to retrieve late fees");
+			response.put("error", "An error occurred while retrieving late fees");
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Pay late fee endpoint
+	 * POST /late-fees/pay
+	 */
+	@PostMapping("/late-fees/pay")
+	public ResponseEntity<Map<String, Object>> payLateFee(@RequestBody LateFeePaymentRequest paymentRequest) {
+		try {
+			logger.debug("Late fee payment request for late fee ID: {}", paymentRequest.getLateFeeId());
+			
+			// Process late fee payment
+			Map<String, Object> result = rentalService.payLateFee(paymentRequest);
+			
+			return ResponseEntity.ok(result);
+			
+		} catch (RuntimeException e) {
+			logger.error("Error during late fee payment: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Payment failed");
+			response.put("error", e.getMessage());
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.badRequest().body(response);
+			
+		} catch (Exception e) {
+			logger.error("Unexpected error during late fee payment: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Payment failed");
+			response.put("error", "An unexpected error occurred during late fee payment");
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Get payment history for a specific late fee
+	 * GET /late-fees/{lateFeeId}/payments
+	 */
+	@GetMapping("/late-fees/{lateFeeId}/payments")
+	public ResponseEntity<Map<String, Object>> getLateFeePaymentHistory(@PathVariable Integer lateFeeId) {
+		try {
+			logger.debug("Get payment history for late fee ID: {}", lateFeeId);
+			
+			// Get payment history from service
+			List<LateFeePayment> payments = rentalService.getLateFeePaymentHistory(lateFeeId);
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "Payment history retrieved successfully");
+			response.put("lateFeeId", lateFeeId);
+			response.put("data", payments);
+			response.put("timestamp", java.time.LocalDateTime.now());
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error retrieving payment history: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Failed to retrieve payment history");
+			response.put("error", "An error occurred while retrieving payment history");
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Get user's payment history for all late fees
+	 * GET /late-fees/payments/user
+	 */
+	@GetMapping("/late-fees/payments/user")
+	public ResponseEntity<Map<String, Object>> getUserPaymentHistory(@RequestHeader("Authorization") String authHeader) {
+		try {
+			logger.debug("Get user payment history request");
+			
+			// Get username from JWT token
+			String token = authHeader.substring(7);
+			String username = jwtService.getSubject(token);
+			
+			// Get payment history from service
+			List<LateFeePayment> payments = rentalService.getUserPaymentHistory(username);
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "Payment history retrieved successfully");
+			response.put("data", payments);
+			response.put("timestamp", java.time.LocalDateTime.now());
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error retrieving user payment history: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Failed to retrieve payment history");
+			response.put("error", "An error occurred while retrieving payment history");
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 		}
 	}
 	

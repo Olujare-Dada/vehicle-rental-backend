@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.bptn.vehicle_project.domain.ReturnResponse;
 import com.bptn.vehicle_project.jpa.Rental;
 import com.bptn.vehicle_project.jpa.User;
 import com.bptn.vehicle_project.jpa.Vehicle;
@@ -116,6 +117,37 @@ public class EmailService {
 			
 		} catch (Exception ex) {
 			this.logger.error("Error while sending rental receipt email to user: " + user.getUsername(), ex);
+		}
+	}
+	
+	@Async
+	public void sendReturnConfirmationEmail(User user, Vehicle vehicle, ReturnResponse returnResponse) {
+		try {
+			/* Collect Data for the Email HTML generation */
+			Context context = new Context();
+			context.setVariable("user", user);
+			context.setVariable("vehicle", vehicle);
+			context.setVariable("returnResponse", returnResponse);
+			
+			/* Process Email HTML Template */
+			String process = this.templateEngine.process("return_confirmation", context);
+			
+			MimeMessage mimeMessage = this.javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
+			
+			/* Set Email Information */
+			helper.setFrom(this.emailFrom, "Vehicle Rental System");
+			helper.setSubject("Vehicle Return Confirmation - " + vehicle.getMake() + " " + vehicle.getModel());
+			helper.setText(process, true);
+			helper.setTo(user.getEmail());
+			
+			/* Send Email */
+			this.javaMailSender.send(mimeMessage);
+			
+			this.logger.debug("Return confirmation email sent to: {}", user.getEmail());
+			
+		} catch (Exception ex) {
+			this.logger.error("Error while sending return confirmation email to user: " + user.getUsername(), ex);
 		}
 	}
 	
