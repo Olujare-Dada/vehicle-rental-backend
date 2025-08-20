@@ -16,7 +16,7 @@ Write-Host ""
 
 # Flask Service Configuration
 "# Flask Service Configuration" | Out-File -FilePath .env -Append -Encoding UTF8
-"FLASK_BASE_URL=http://localhost:5000" | Out-File -FilePath .env -Append -Encoding UTF8
+"FLASK_BASE_URL=https://vehicle-rental-profile-image-uploader.onrender.com" | Out-File -FilePath .env -Append -Encoding UTF8
 "" | Out-File -FilePath .env -Append -Encoding UTF8
 
 # JWT Configuration
