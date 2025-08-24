@@ -546,7 +546,7 @@ public class UserController {
 				response.append("\"startDate\": \"").append(rental.getStartDate().toString()).append("\",");
 				response.append("\"endDate\": \"").append(rental.getEndDate().toString()).append("\",");
 				response.append("\"totalCost\": \"$").append(rental.getTotalCost()).append("\",");
-				response.append("\"status\": \"").append("true".equals(rental.getReturnFlag()) ? "Returned" : "Active").append("\",");
+				response.append("\"status\": \"").append("RETURNED".equals(rental.getReturnFlag()) ? "Returned" : "Active").append("\",");
 				response.append("\"additionalNotes\": \"").append(rental.getAdditionalNotes() != null ? rental.getAdditionalNotes() : "").append("\"");
 				response.append("}");
 				
