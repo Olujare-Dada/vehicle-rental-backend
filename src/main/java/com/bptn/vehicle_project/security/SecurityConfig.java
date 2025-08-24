@@ -38,12 +38,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/signup", "/login", "/test", "/test-post", "/user/verifyEmail", "/profile", 
-                               "/profile/*", "/verify-token", "/fleet", "/fleet/*", "/vehicle/*", "/debug/*", "/rent", "/balance/add", 
-                               "/balance", "/balance/debit", "/rentals/user", "/logout").permitAll() // 👈 Allow these
+                                .requestMatchers("/signup", "/login", "/test", "/test-post", "/user/verifyEmail", "/fleet", "/fleet/*", "/vehicle/*", "/debug/*", "/logout").permitAll() // 👈 Allow these
                 .anyRequest().authenticated()
-            );
-            // Completely disabled security for debugging
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // 👈 Add JWT filter
         
         // Enable debug logging for security
         http.headers().frameOptions().disable();

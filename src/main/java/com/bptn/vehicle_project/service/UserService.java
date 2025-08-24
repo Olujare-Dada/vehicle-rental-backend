@@ -277,11 +277,17 @@ public class UserService {
 		
 		// Check if user has sufficient balance
 		if (user.getCurrentBalance().compareTo(amount) < 0) {
-			throw new InsufficientBalanceException("Insufficient balance. Required: " + amount + ", Available: " + user.getCurrentBalance());
+			throw new InsufficientBalanceException("Insufficient balance. Required: $" + amount + ", Available: $" + user.getCurrentBalance() + ". Please add funds to your account.");
 		}
 		
 		// Debit balance
 		BigDecimal newBalance = user.getCurrentBalance().subtract(amount);
+		
+		// Additional protection: Ensure balance never goes negative
+		if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+			throw new InsufficientBalanceException("Transaction would result in negative balance. Required: $" + amount + ", Available: $" + user.getCurrentBalance() + ". Please add funds to your account.");
+		}
+		
 		user.setCurrentBalance(newBalance);
 		
 		// Save updated user

@@ -23,7 +23,7 @@ public class LateFee {
 	@Column(name = "username")
 	private String username;
 	
-	@Column(name = "rentalId")
+	@Column(name = "rentalid")
 	private Integer rentalId;
 	
 	@Column(name = "days_late")
@@ -44,7 +44,7 @@ public class LateFee {
 	private User user;
 	
 	@ManyToOne
-	@JoinColumn(name = "rentalId", insertable = false, updatable = false)
+	@JoinColumn(name = "rentalid", insertable = false, updatable = false)
 	private Rental rental;
 	
 	// Default constructor
@@ -57,6 +57,16 @@ public class LateFee {
 		this.daysLate = daysLate;
 		this.totalCost = totalCost;
 		this.amountPaid = BigDecimal.ZERO; // Initialize with 0 paid
+		this.createdAt = new Timestamp(System.currentTimeMillis());
+	}
+	
+	// Constructor with amountPaid parameter
+	public LateFee(String username, Integer rentalId, Integer daysLate, BigDecimal totalCost, BigDecimal amountPaid) {
+		this.username = username;
+		this.rentalId = rentalId;
+		this.daysLate = daysLate;
+		this.totalCost = totalCost;
+		this.amountPaid = amountPaid != null ? amountPaid : BigDecimal.ZERO;
 		this.createdAt = new Timestamp(System.currentTimeMillis());
 	}
 	
@@ -93,7 +103,7 @@ public class LateFee {
 		this.daysLate = daysLate;
 	}
 	
-	public BigDecimal getTotalCost() {
+		public BigDecimal getTotalCost() {
 		return totalCost;
 	}
 	

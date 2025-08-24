@@ -1,6 +1,8 @@
 package com.bptn.vehicle_project.controller;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +35,13 @@ import com.bptn.vehicle_project.domain.LogoutResponse;
 import com.bptn.vehicle_project.domain.ProfileResponse;
 import com.bptn.vehicle_project.domain.RentalRequest;
 import com.bptn.vehicle_project.domain.LateFeePaymentRequest;
+import com.bptn.vehicle_project.domain.LateFeeCalculationRequest;
+import com.bptn.vehicle_project.domain.LateFeeCalculationResponse;
+import com.bptn.vehicle_project.domain.RentalStatusUpdateRequest;
+import com.bptn.vehicle_project.domain.RentalDetailsResponse;
+import com.bptn.vehicle_project.domain.EnhancedProfileResponse;
 import com.bptn.vehicle_project.domain.ReturnRequest;
+import com.bptn.vehicle_project.exception.CustomAccessDeniedException;
 import com.bptn.vehicle_project.domain.ReturnResponse;
 import com.bptn.vehicle_project.domain.UserResponse;
 import com.bptn.vehicle_project.jpa.LateFee;
@@ -42,6 +50,7 @@ import com.bptn.vehicle_project.jpa.Profile;
 import com.bptn.vehicle_project.jpa.Rental;
 import com.bptn.vehicle_project.jpa.User;
 import com.bptn.vehicle_project.jpa.Vehicle;
+import com.bptn.vehicle_project.repository.RentalRepository;
 import com.bptn.vehicle_project.security.JwtService;
 import com.bptn.vehicle_project.service.FleetService;
 import com.bptn.vehicle_project.service.ProfileService;
@@ -301,7 +310,31 @@ public class UserController {
 			return ResponseEntity.ok(response);
 		} catch (Exception e) {
 			logger.error("Error retrieving profile for username {}: {}", username, e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			throw new RuntimeException("Failed to retrieve profile: " + e.getMessage());
+		}
+	}
+	
+	@GetMapping("/profile/{username}/enhanced")
+	public ResponseEntity<EnhancedProfileResponse> getEnhancedProfile(@PathVariable String username) {
+		try {
+			logger.debug("Enhanced profile get request for username: {}", username);
+			
+			// Check if the current user is requesting their own profile
+			String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+			if (!currentUsername.equals(username)) {
+				logger.warn("User {} attempted to access enhanced profile of user {}", currentUsername, username);
+				throw new CustomAccessDeniedException("Access denied. You can only view your own profile.");
+			}
+			
+			EnhancedProfileResponse enhancedProfile = rentalService.getEnhancedProfile(username);
+			
+			return ResponseEntity.ok(enhancedProfile);
+		} catch (RuntimeException e) {
+			logger.error("Access denied for enhanced profile - username {}: {}", username, e.getMessage());
+			throw e; // Re-throw to be handled by global exception handler
+		} catch (Exception e) {
+			logger.error("Error retrieving enhanced profile for username {}: {}", username, e.getMessage());
+			throw new RuntimeException("Failed to retrieve enhanced profile: " + e.getMessage());
 		}
 	}
 	
@@ -721,21 +754,69 @@ public class UserController {
 	 * POST /rentals/return
 	 */
 	@PostMapping("/rentals/return")
-	public ResponseEntity<Map<String, Object>> returnVehicle(@RequestBody ReturnRequest returnRequest) {
+	public ResponseEntity<Map<String, Object>> returnVehicle(@RequestBody ReturnRequest returnRequest, 
+														   @RequestHeader(value = "Authorization", required = false) String authHeader) {
+		// Debug logging
+		logger.debug("Return vehicle request received");
+		logger.debug("Authorization header: {}", authHeader);
+		logger.debug("Return request: {}", returnRequest);
+		
+		// Check if user is authenticated
+		String currentUsername = "NOT_AUTHENTICATED";
 		try {
+			if (SecurityContextHolder.getContext().getAuthentication() != null) {
+				currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+			}
+			logger.debug("Current authenticated user: {}", currentUsername);
+			
 			logger.debug("Vehicle return request for rental ID: {}", returnRequest.getRentalId());
 			
 			// Process vehicle return
 			ReturnResponse returnResponse = rentalService.returnVehicle(returnRequest);
 			
-			// Create success response
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", true);
-			response.put("message", "Vehicle returned successfully");
-			response.put("data", returnResponse);
-			response.put("timestamp", returnResponse.getTimestamp());
+			logger.debug("ReturnResponse object created: rentalId={}, vehicleId={}, vehicleName={}, returnDate={}, timestamp={}", 
+				returnResponse.getRentalId(), 
+				returnResponse.getVehicleId(), 
+				returnResponse.getVehicleName(), 
+				returnResponse.getReturnDate(), 
+				returnResponse.getTimestamp());
 			
-			return ResponseEntity.ok(response);
+			logger.debug("Vehicle return processed successfully, creating response");
+			
+			try {
+				// Create success response
+				Map<String, Object> response = new HashMap<>();
+				response.put("success", true);
+				response.put("message", "Vehicle returned successfully");
+				response.put("data", returnResponse);
+				response.put("timestamp", returnResponse.getTimestamp());
+				
+				logger.debug("Response created: {}", response);
+				logger.debug("Returning response to frontend");
+				
+				// Test with simple response first
+				Map<String, Object> testResponse = new HashMap<>();
+				testResponse.put("success", true);
+				testResponse.put("message", "Vehicle returned successfully");
+				testResponse.put("rentalId", returnResponse.getRentalId());
+				testResponse.put("vehicleId", returnResponse.getVehicleId());
+				testResponse.put("vehicleName", returnResponse.getVehicleName());
+				testResponse.put("returnDate", returnResponse.getReturnDate());
+				testResponse.put("timestamp", java.time.LocalDateTime.now());
+				
+				logger.debug("Test response created: {}", testResponse);
+				
+				return ResponseEntity.ok(testResponse);
+				
+			} catch (Exception e) {
+				logger.error("Error creating response: {}", e.getMessage(), e);
+				Map<String, Object> errorResponse = new HashMap<>();
+				errorResponse.put("success", false);
+				errorResponse.put("message", "Error creating response");
+				errorResponse.put("error", e.getMessage());
+				errorResponse.put("timestamp", java.time.LocalDateTime.now());
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+			}
 			
 		} catch (InsufficientBalanceException e) {
 			logger.error("Insufficient balance for vehicle return: {}", e.getMessage());
@@ -763,6 +844,39 @@ public class UserController {
 			response.put("error", "An unexpected error occurred during vehicle return");
 			response.put("timestamp", java.time.LocalDateTime.now());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Check if user can afford to return a vehicle with late fees
+	 * POST /rentals/{rentalId}/check-return
+	 */
+	@PostMapping("/rentals/{rentalId}/check-return")
+	public ResponseEntity<Map<String, Object>> checkReturnAffordability(
+			@PathVariable Integer rentalId,
+			@RequestBody Map<String, String> request) {
+		try {
+			logger.debug("Check return affordability for rental ID: {}", rentalId);
+			
+			LocalDate returnDate = LocalDate.parse(request.get("returnDate"));
+			Map<String, Object> result = rentalService.checkReturnAffordability(rentalId, returnDate);
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "Affordability check completed");
+			response.put("data", result);
+			response.put("timestamp", java.time.LocalDateTime.now());
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error checking return affordability: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Failed to check affordability");
+			response.put("error", e.getMessage());
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.badRequest().body(response);
 		}
 	}
 	
@@ -899,6 +1013,123 @@ public class UserController {
 			response.put("error", "An error occurred while retrieving payment history");
 			response.put("timestamp", java.time.LocalDateTime.now());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Calculate late fees for a rental
+	 * POST /rentals/calculate-late-fees
+	 */
+	@PostMapping("/rentals/calculate-late-fees")
+	public ResponseEntity<LateFeeCalculationResponse> calculateLateFees(@RequestBody LateFeeCalculationRequest request) {
+		try {
+			logger.debug("Late fee calculation request for rental ID: {}", request.getRentalId());
+			
+			// Calculate late fees
+			LateFeeCalculationResponse response = rentalService.calculateLateFees(request);
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error calculating late fees: {}", e.getMessage());
+			LateFeeCalculationResponse errorResponse = new LateFeeCalculationResponse(
+				BigDecimal.ZERO, 0, BigDecimal.ZERO, "Error calculating late fees: " + e.getMessage()
+			);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+		}
+	}
+	
+	/**
+	 * Update rental status
+	 * PUT /rentals/{rentalId}/status
+	 */
+	@PutMapping("/rentals/{rentalId}/status")
+	public ResponseEntity<Map<String, Object>> updateRentalStatus(
+			@PathVariable Integer rentalId,
+			@RequestBody RentalStatusUpdateRequest request) {
+		try {
+			logger.debug("Rental status update request for rental ID: {}", rentalId);
+			
+			// Update rental status
+			Map<String, Object> result = rentalService.updateRentalStatus(rentalId, request);
+			
+			return ResponseEntity.ok(result);
+			
+		} catch (Exception e) {
+			logger.error("Error updating rental status: {}", e.getMessage());
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Failed to update rental status");
+			response.put("error", e.getMessage());
+			response.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+	
+	/**
+	 * Get rental details with late fee information
+	 * GET /rentals/{rentalId}/details
+	 */
+	@GetMapping("/rentals/{rentalId}/details")
+	public ResponseEntity<RentalDetailsResponse> getRentalDetails(@PathVariable Integer rentalId) {
+		try {
+			logger.debug("Rental details request for rental ID: {}", rentalId);
+			
+			// Get rental details with late fee info
+			RentalDetailsResponse response = rentalService.getRentalDetails(rentalId);
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error retrieving rental details: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+	
+	/**
+	 * Debug endpoint to check rental status
+	 * GET /debug/rental/{rentalId}
+	 */
+	@GetMapping("/debug/rental/{rentalId}")
+	public ResponseEntity<Map<String, Object>> debugRental(@PathVariable Integer rentalId) {
+		try {
+			logger.debug("Debug request for rental ID: {}", rentalId);
+			
+			Map<String, Object> debugInfo = new HashMap<>();
+			
+			// Get rental info
+			Rental rental = rentalRepository.findById(rentalId).orElse(null);
+			if (rental != null) {
+				debugInfo.put("rentalId", rental.getRentalId());
+				debugInfo.put("returnFlag", rental.getReturnFlag());
+				debugInfo.put("returnDate", rental.getReturnDate());
+				debugInfo.put("startDate", rental.getStartDate());
+				debugInfo.put("endDate", rental.getEndDate());
+				debugInfo.put("user", rental.getUser().getUsername());
+				
+				// Get vehicle info
+				Vehicle vehicle = rental.getVehicle();
+				if (vehicle != null) {
+					debugInfo.put("vehicleId", vehicle.getVehicleId());
+					debugInfo.put("vehicleStatus", vehicle.getVehicleRentalStatus());
+					debugInfo.put("make", vehicle.getMake());
+					debugInfo.put("model", vehicle.getModel());
+				}
+			} else {
+				debugInfo.put("error", "Rental not found");
+			}
+			
+			debugInfo.put("timestamp", java.time.LocalDateTime.now());
+			
+			return ResponseEntity.ok(debugInfo);
+			
+		} catch (Exception e) {
+			logger.error("Error in debug endpoint: {}", e.getMessage());
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", e.getMessage());
+			errorResponse.put("timestamp", java.time.LocalDateTime.now());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+			
 		}
 	}
 	
