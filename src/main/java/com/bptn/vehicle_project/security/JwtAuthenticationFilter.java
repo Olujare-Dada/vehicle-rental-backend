@@ -60,6 +60,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // Get JWT token from request header
             String jwt = getJwtFromRequest(request);
+            
+            logger.debug("JWT token extracted: {}", jwt != null ? jwt.substring(0, Math.min(20, jwt.length())) + "..." : "NULL");
 
             // Validate JWT token
             if (StringUtils.hasText(jwt)) {
