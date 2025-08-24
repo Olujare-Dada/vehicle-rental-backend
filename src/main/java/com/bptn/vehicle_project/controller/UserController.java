@@ -593,7 +593,7 @@ public class UserController {
 				rentalData.put("vehicleId", vehicle.getVehicleId());
 				rentalData.put("vehicleName", vehicle.getMake() + " " + vehicle.getModel());
 				rentalData.put("vehicleType", vehicle.getCategory() != null ? vehicle.getCategory().getName() : "Unknown");
-				rentalData.put("vehicleImageUrl", vehicle.getImageUrl());
+				rentalData.put("vehicleImageUrl", vehicle.getVehicleImageUrl());
 				rentalData.put("vehicleMake", vehicle.getMake());
 				rentalData.put("vehicleModel", vehicle.getModel());
 				rentalData.put("vehicleYear", vehicle.getYear());
@@ -603,7 +603,6 @@ public class UserController {
 				rentalData.put("totalCost", activeRental.getTotalCost());
 				rentalData.put("status", "ACTIVE".equals(activeRental.getReturnFlag()) ? "Active" : activeRental.getReturnFlag());
 				rentalData.put("additionalNotes", activeRental.getAdditionalNotes() != null ? activeRental.getAdditionalNotes() : "");
-				rentalData.put("rentalCreatedOn", activeRental.getCreatedOn() != null ? activeRental.getCreatedOn().toString() : null);
 				
 				// Check if rental is overdue
 				LocalDate today = LocalDate.now();
