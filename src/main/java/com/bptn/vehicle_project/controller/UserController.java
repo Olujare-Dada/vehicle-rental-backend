@@ -565,6 +565,88 @@ public class UserController {
 		}
 	}
 	
+	@GetMapping("/rentals/active")
+	public ResponseEntity<Map<String, Object>> getActiveRental(@RequestHeader("Authorization") String authHeader) {
+		try {
+			logger.debug("Active rental request");
+			
+			// Remove "Bearer " prefix and get username from token
+			String token = authHeader.substring(7);
+			String username = jwtService.getSubject(token);
+			
+			// Get user's current active rental (where returnFlag is not "RETURNED")
+			Optional<Rental> activeRentalOpt = rentalRepository.findTopByUserUsernameAndReturnFlagNotOrderByStartDateDesc(username, "RETURNED");
+			
+			Map<String, Object> response = new HashMap<>();
+			
+			if (activeRentalOpt.isEmpty()) {
+				response.put("hasActiveRental", false);
+				response.put("message", "No active rental found");
+				response.put("data", null);
+			} else {
+				// Get the most recent active rental
+				Rental activeRental = activeRentalOpt.get();
+				Vehicle vehicle = activeRental.getVehicle();
+				
+				Map<String, Object> rentalData = new HashMap<>();
+				rentalData.put("rentalId", activeRental.getRentalId());
+				rentalData.put("vehicleId", vehicle.getVehicleId());
+				rentalData.put("vehicleName", vehicle.getMake() + " " + vehicle.getModel());
+				rentalData.put("vehicleType", vehicle.getCategory() != null ? vehicle.getCategory().getName() : "Unknown");
+				rentalData.put("vehicleImageUrl", vehicle.getImageUrl());
+				rentalData.put("vehicleMake", vehicle.getMake());
+				rentalData.put("vehicleModel", vehicle.getModel());
+				rentalData.put("vehicleYear", vehicle.getYear());
+				rentalData.put("vehicleColor", vehicle.getColor());
+				rentalData.put("startDate", activeRental.getStartDate().toString());
+				rentalData.put("endDate", activeRental.getEndDate().toString());
+				rentalData.put("totalCost", activeRental.getTotalCost());
+				rentalData.put("status", "ACTIVE".equals(activeRental.getReturnFlag()) ? "Active" : activeRental.getReturnFlag());
+				rentalData.put("additionalNotes", activeRental.getAdditionalNotes() != null ? activeRental.getAdditionalNotes() : "");
+				rentalData.put("rentalCreatedOn", activeRental.getCreatedOn() != null ? activeRental.getCreatedOn().toString() : null);
+				
+				// Check if rental is overdue
+				LocalDate today = LocalDate.now();
+				boolean isOverdue = today.isAfter(activeRental.getEndDate());
+				rentalData.put("isOverdue", isOverdue);
+				
+				if (isOverdue) {
+					long daysLate = java.time.temporal.ChronoUnit.DAYS.between(activeRental.getEndDate(), today);
+					BigDecimal dailyLateFee = new BigDecimal("15.00");
+					BigDecimal potentialLateFees = dailyLateFee.multiply(BigDecimal.valueOf(daysLate));
+					rentalData.put("daysLate", daysLate);
+					rentalData.put("potentialLateFees", potentialLateFees);
+				}
+				
+				// Check for existing late fees for this rental
+				try {
+					List<LateFee> existingLateFees = rentalService.findUnpaidLateFeesByUsername(username);
+					BigDecimal totalOutstandingLateFees = rentalService.calculateTotalOutstandingLateFees(username);
+					rentalData.put("hasOutstandingLateFees", !existingLateFees.isEmpty());
+					rentalData.put("totalOutstandingLateFees", totalOutstandingLateFees);
+				} catch (Exception e) {
+					logger.warn("Could not calculate outstanding late fees: {}", e.getMessage());
+					rentalData.put("hasOutstandingLateFees", false);
+					rentalData.put("totalOutstandingLateFees", BigDecimal.ZERO);
+				}
+				
+				response.put("hasActiveRental", true);
+				response.put("message", "Active rental found");
+				response.put("data", rentalData);
+			}
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Error retrieving active rental: {}", e.getMessage());
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("hasActiveRental", false);
+			errorResponse.put("error", "An error occurred while retrieving active rental");
+			errorResponse.put("message", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+		}
+	}
+	
 	@PostMapping("/profile/upload-image")
 	public ResponseEntity<Map<String, Object>> uploadProfileImage(
 			@RequestParam("profile_image") MultipartFile profileImage,

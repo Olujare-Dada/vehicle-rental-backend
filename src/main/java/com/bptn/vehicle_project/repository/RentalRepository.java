@@ -29,5 +29,8 @@ public interface RentalRepository extends JpaRepository<Rental, Integer> {
 	
 	// Count active rentals by user
 	long countByUserUsernameAndReturnFlagNot(String username, String returnFlag);
+	
+	// Get current active rental by user (most recent)
+	Optional<Rental> findTopByUserUsernameAndReturnFlagNotOrderByStartDateDesc(String username, String returnFlag);
 
 }
