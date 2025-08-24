@@ -841,6 +841,11 @@ public class UserController {
 		logger.debug("Return vehicle request received");
 		logger.debug("Authorization header: {}", authHeader);
 		logger.debug("Return request: {}", returnRequest);
+		logger.debug("Return request rentalId: {} (type: {})", 
+			returnRequest.getRentalId(), 
+			returnRequest.getRentalId() != null ? returnRequest.getRentalId().getClass().getSimpleName() : "NULL");
+		logger.debug("Return request returnDate: {}", returnRequest.getReturnDate());
+		logger.debug("Return request returnNotes: {}", returnRequest.getReturnNotes());
 		
 		// Check if user is authenticated
 		String currentUsername = "NOT_AUTHENTICATED";

@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -184,9 +185,110 @@ public class RentalService {
 		User user = userRepository.findByUsername(username)
 				.orElseThrow(() -> new RuntimeException("User not found"));
 		
+		// Debug logging for return request
+		logger.info("Return request received - Rental ID: {} (type: {}), Return Date: {}, Notes: {}", 
+			returnRequest.getRentalId(), 
+			returnRequest.getRentalId() != null ? returnRequest.getRentalId().getClass().getSimpleName() : "NULL",
+			returnRequest.getReturnDate(), 
+			returnRequest.getReturnNotes());
+		
+		// Additional debugging for rental ID
+		if (returnRequest.getRentalId() != null) {
+			logger.info("Rental ID details - Value: {}, toString(): {}, hashCode(): {}", 
+				returnRequest.getRentalId(), 
+				returnRequest.getRentalId().toString(), 
+				returnRequest.getRentalId().hashCode());
+			
+			// Check for potential precision issues
+			if (returnRequest.getRentalId() instanceof Number) {
+				Number num = (Number) returnRequest.getRentalId();
+				logger.info("Rental ID as Number - intValue: {}, longValue: {}, doubleValue: {}", 
+					num.intValue(), num.longValue(), num.doubleValue());
+			}
+		}
+		
+		// Check if rentalId is null
+		if (returnRequest.getRentalId() == null) {
+			throw new RuntimeException("Rental ID cannot be null");
+		}
+		
+		// Check if rentalId is a valid positive integer
+		if (returnRequest.getRentalId() <= 0) {
+			throw new RuntimeException("Rental ID must be a positive integer, received: " + returnRequest.getRentalId());
+		}
+		
+		// Debug: List all rentals for this user to see what's available
+		List<Rental> userRentals = rentalRepository.findByUserUsername(username);
+		logger.info("User {} has {} rentals total", username, userRentals.size());
+		for (Rental r : userRentals) {
+			logger.info("  Rental ID: {} (type: {}), Status: {}, Vehicle: {}", 
+				r.getRentalId(), 
+				r.getRentalId() != null ? r.getRentalId().getClass().getSimpleName() : "NULL",
+				r.getReturnFlag(),
+				r.getVehicle() != null ? r.getVehicle().getVehicleId() : "NULL");
+		}
+		
+		// Debug: Try to find rental by ID and log the result
+		Optional<Rental> rentalOpt = rentalRepository.findByRentalId(returnRequest.getRentalId());
+		logger.info("Looking for rental with ID: {} (type: {}), Found: {}", 
+			returnRequest.getRentalId(), 
+			returnRequest.getRentalId() != null ? returnRequest.getRentalId().getClass().getSimpleName() : "NULL",
+			rentalOpt.isPresent());
+		
+		// Debug: Get all rentals for comprehensive debugging
+		List<Rental> allRentals = rentalRepository.findAll();
+		
+		// Debug: Try alternative approaches to find the rental
+		if (!rentalOpt.isPresent()) {
+			logger.warn("Rental not found by ID, trying alternative approaches...");
+			
+			// Try to find by user and vehicle combination (reuse existing userRentals)
+			for (Rental r : userRentals) {
+				if (r.getRentalId().equals(returnRequest.getRentalId())) {
+					logger.info("Found rental by user search with matching ID: {}", r.getRentalId());
+				}
+			}
+			
+			// Try to find any rental with similar ID (in case of type mismatch)
+			for (Rental r : allRentals) {
+				if (r.getRentalId() != null && r.getRentalId().toString().equals(returnRequest.getRentalId().toString())) {
+					logger.info("Found rental with string-matching ID: {} (actual: {})", 
+						returnRequest.getRentalId(), r.getRentalId());
+				}
+			}
+		}
+		
+		// Debug: Show total rentals count
+		logger.info("Total rentals in database: {}", allRentals.size());
+		if (!allRentals.isEmpty()) {
+			Rental firstRental = allRentals.get(0);
+			logger.info("First rental in database - ID: {} (type: {}), User: {}, Vehicle: {}", 
+				firstRental.getRentalId(), 
+				firstRental.getRentalId() != null ? firstRental.getRentalId().getClass().getSimpleName() : "NULL",
+				firstRental.getUser() != null ? firstRental.getUser().getUsername() : "NULL",
+				firstRental.getVehicle() != null ? firstRental.getVehicle().getVehicleId() : "NULL");
+		}
+		
 		// Get rental record
-		Rental rental = rentalRepository.findByRentalId(returnRequest.getRentalId())
-				.orElseThrow(() -> new RuntimeException("Rental not found"));
+		Rental rental = rentalOpt.orElseThrow(() -> {
+			// Enhanced error message with debugging info
+			StringBuilder errorMsg = new StringBuilder();
+			errorMsg.append("Rental not found with ID: ").append(returnRequest.getRentalId());
+			errorMsg.append(" (type: ").append(returnRequest.getRentalId() != null ? returnRequest.getRentalId().getClass().getSimpleName() : "NULL").append(")");
+			errorMsg.append(". User: ").append(username);
+			errorMsg.append(". Total rentals in database: ").append(allRentals.size());
+			errorMsg.append(". User rentals: ").append(userRentals.size());
+			
+			// List available rental IDs for this user
+			if (!userRentals.isEmpty()) {
+				errorMsg.append(". Available rental IDs: ");
+				for (Rental r : userRentals) {
+					errorMsg.append(r.getRentalId()).append("(").append(r.getReturnFlag()).append(") ");
+				}
+			}
+			
+			return new RuntimeException(errorMsg.toString());
+		});
 		
 		// Debug logging for rental object
 		logger.info("Rental object loaded - ID: {}, User: {}, Vehicle: {}, Status: {}", 
