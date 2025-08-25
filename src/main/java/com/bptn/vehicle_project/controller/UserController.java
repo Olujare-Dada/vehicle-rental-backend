@@ -545,6 +545,7 @@ public class UserController {
 				response.append("\"vehicleId\": ").append(vehicle.getVehicleId()).append(",");
 				response.append("\"vehicleName\": \"").append(vehicle.getMake()).append(" ").append(vehicle.getModel()).append("\",");
 				response.append("\"vehicleType\": \"").append(vehicle.getCategory() != null ? vehicle.getCategory().getName() : "Unknown").append("\",");
+				response.append("\"vehicleImageUrl\": \"").append(vehicle.getVehicleImageUrl() != null ? vehicle.getVehicleImageUrl() : "").append("\",");
 				response.append("\"startDate\": \"").append(rental.getStartDate().toString()).append("\",");
 				response.append("\"endDate\": \"").append(rental.getEndDate().toString()).append("\",");
 				response.append("\"totalCost\": \"$").append(rental.getTotalCost()).append("\",");
