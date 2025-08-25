@@ -17,7 +17,7 @@ jwt:
     
 # Client Configuration  
 client:
-  url: http://localhost:8080
+  url: https://vrentl.netlify.app
   email:
     verify: 
       param: user/verifyEmail

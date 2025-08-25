@@ -192,14 +192,14 @@ public class UserController {
 			
 			// Redirect to frontend with success status
 			return ResponseEntity.status(HttpStatus.FOUND)
-					.header("Location", "http://localhost:3000/email-verification?status=success")
+					.header("Location", "https://vrentl.netlify.app/email-verification?status=success")
 					.build();
 		} catch (Exception e) {
 			logger.error("Error verifying email: {}", e.getMessage());
 			
 			// Redirect to frontend with error status
 			return ResponseEntity.status(HttpStatus.FOUND)
-					.header("Location", "http://localhost:3000/email-verification?status=error&message=" + e.getMessage())
+					.header("Location", "https://vrentl.netlify.app/email-verification?status=error&message=" + e.getMessage())
 					.build();
 		}
 	}
