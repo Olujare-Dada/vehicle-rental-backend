@@ -3,6 +3,8 @@ package com.bptn.vehicle_project.controller;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -566,6 +568,124 @@ public class UserController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("{\"error\": \"An error occurred while retrieving user rentals\"}");
 		}
+	}
+	
+	@GetMapping("/rentals/user/paginated")
+	public ResponseEntity<String> getUserRentalsPaginated(
+			@RequestHeader("Authorization") String authHeader,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
+			@RequestParam(defaultValue = "startDate") String sortBy,
+			@RequestParam(defaultValue = "desc") String sortDirection) {
+		try {
+			logger.debug("User rentals paginated request - page: {}, size: {}, sortBy: {}, sortDirection: {}", 
+					page, size, sortBy, sortDirection);
+			
+			// Remove "Bearer " prefix and get username from token
+			String token = authHeader.substring(7);
+			String username = jwtService.getSubject(token);
+			
+			// Validate pagination parameters
+			if (page < 0) page = 0;
+			if (size < 1 || size > 100) size = 10; // Limit max page size to 100
+			
+			// Get user's rentals
+			List<Rental> allUserRentals = rentalRepository.findByUserUsername(username);
+			
+			// Sort rentals based on parameters
+			List<Rental> sortedRentals = sortRentals(allUserRentals, sortBy, sortDirection);
+			
+			// Calculate pagination
+			int totalCount = sortedRentals.size();
+			int totalPages = (int) Math.ceil((double) totalCount / size);
+			int startIndex = page * size;
+			int endIndex = Math.min(startIndex + size, totalCount);
+			
+			// Get paginated subset
+			List<Rental> paginatedRentals = new ArrayList<>();
+			if (startIndex < totalCount) {
+				paginatedRentals = sortedRentals.subList(startIndex, endIndex);
+			}
+			
+			// Build response
+			StringBuilder response = new StringBuilder();
+			response.append("{");
+			response.append("\"totalCount\": ").append(totalCount).append(",");
+			response.append("\"totalPages\": ").append(totalPages).append(",");
+			response.append("\"currentPage\": ").append(page).append(",");
+			response.append("\"pageSize\": ").append(size).append(",");
+			response.append("\"hasNext\": ").append(page < totalPages - 1).append(",");
+			response.append("\"hasPrevious\": ").append(page > 0).append(",");
+			response.append("\"nextPage\": ").append(page < totalPages - 1 ? page + 1 : -1).append(",");
+			response.append("\"previousPage\": ").append(page > 0 ? page - 1 : -1).append(",");
+			response.append("\"rentals\": [");
+			
+			for (int i = 0; i < paginatedRentals.size(); i++) {
+				Rental rental = paginatedRentals.get(i);
+				Vehicle vehicle = rental.getVehicle();
+				
+				response.append("{");
+				response.append("\"rentalId\": ").append(rental.getRentalId()).append(",");
+				response.append("\"vehicleId\": ").append(vehicle.getVehicleId()).append(",");
+				response.append("\"vehicleName\": \"").append(vehicle.getMake()).append(" ").append(vehicle.getModel()).append("\",");
+				response.append("\"vehicleType\": \"").append(vehicle.getCategory() != null ? vehicle.getCategory().getName() : "Unknown").append("\",");
+				response.append("\"vehicleImageUrl\": \"").append(vehicle.getVehicleImageUrl() != null ? vehicle.getVehicleImageUrl() : "").append("\",");
+				response.append("\"startDate\": \"").append(rental.getStartDate().toString()).append("\",");
+				response.append("\"endDate\": \"").append(rental.getEndDate().toString()).append("\",");
+				response.append("\"totalCost\": \"$").append(rental.getTotalCost()).append("\",");
+				response.append("\"status\": \"").append("RETURNED".equals(rental.getReturnFlag()) ? "Returned" : "Active").append("\",");
+				response.append("\"additionalNotes\": \"").append(rental.getAdditionalNotes() != null ? rental.getAdditionalNotes() : "").append("\"");
+				response.append("}");
+				
+				if (i < paginatedRentals.size() - 1) {
+					response.append(",");
+				}
+			}
+			
+			response.append("]}");
+			
+			return ResponseEntity.ok(response.toString());
+		} catch (Exception e) {
+			logger.error("Error retrieving user rentals paginated: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("{\"error\": \"An error occurred while retrieving user rentals\"}");
+		}
+	}
+	
+	/**
+	 * Helper method to sort rentals based on sortBy and sortDirection parameters
+	 */
+	private List<Rental> sortRentals(List<Rental> rentals, String sortBy, String sortDirection) {
+		List<Rental> sortedList = new ArrayList<>(rentals);
+		
+		Comparator<Rental> comparator = null;
+		
+		switch (sortBy.toLowerCase()) {
+			case "startdate":
+				comparator = Comparator.comparing(Rental::getStartDate);
+				break;
+			case "enddate":
+				comparator = Comparator.comparing(Rental::getEndDate);
+				break;
+			case "totalcost":
+				comparator = Comparator.comparing(Rental::getTotalCost);
+				break;
+			case "status":
+				comparator = Comparator.comparing(Rental::getReturnFlag);
+				break;
+			case "rentalid":
+			default:
+				comparator = Comparator.comparing(Rental::getRentalId);
+				break;
+		}
+		
+		// Apply sort direction
+		if ("desc".equalsIgnoreCase(sortDirection)) {
+			comparator = comparator.reversed();
+		}
+		
+		sortedList.sort(comparator);
+		return sortedList;
 	}
 	
 	@GetMapping("/rentals/active")
