@@ -532,7 +532,9 @@ public class UserController {
 			List<Rental> userRentals = rentalRepository.findByUserUsername(username);
 			
 			StringBuilder response = new StringBuilder();
-			response.append("{\"rentals\": [");
+			response.append("{");
+			response.append("\"totalCount\": ").append(userRentals.size()).append(",");
+			response.append("\"rentals\": [");
 			
 			for (int i = 0; i < userRentals.size(); i++) {
 				Rental rental = userRentals.get(i);
